@@ -99,3 +99,58 @@ Rejected: 3
 ### Notes
 
 Validation only checks metadata. It does not check whether document files exist.
+
+
+
+
+## Task 1.3 — Reporting CLI
+
+Task 1.3 adds JSON report export using `reporting.py`.
+
+The reporting utility reuses the inventory and validation
+functions from `inventory.py` without duplicating them.
+
+### Display inventory
+
+```bash
+python3 reporting.py data/sample_metadata.json
+```
+
+### Validate documents
+
+```bash
+python3 reporting.py data/validation_sample.json --validate
+```
+
+### Export inventory report
+
+```bash
+python3 reporting.py data/sample_metadata.json --output reports/inventory.json
+```
+
+### Export validation report
+
+```bash
+python3 reporting.py data/validation_sample.json --validate --output reports/validation.json
+```
+
+### Help
+
+```bash
+python3 reporting.py --help
+```
+
+### Report contents
+
+Inventory reports include total documents and counts by type
+and department.
+
+Validation reports include total, accepted, and rejected
+document counts, plus each rejected record's index, ID,
+and rejection reasons.
+
+### Error handling
+
+The reporting utility prevents overwriting the input JSON
+file and returns a nonzero exit code when an error occurs.
+

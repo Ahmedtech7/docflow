@@ -1,0 +1,35 @@
+{
+  "rejected": [
+    {
+      "id": "DOC-003",
+      "index": 2,
+      "reasons": [
+        "Unsupported document type: pdf",
+        "Unsupported filename extension",
+        "Size must be between 0 and 5120 KB"
+      ]
+    },
+    {
+      "id": "doc-001",
+      "index": 3,
+      "reasons": [
+        "Duplicate document ID"
+      ]
+    },
+    {
+      "id": "DOC-005",
+      "index": 4,
+      "reasons": [
+        "Filename extension does not match document type",
+        "Size must be between 0 and 5120 KB",
+        "Invalid ISO 8601 date-time",
+        "Invalid file path"
+      ]
+    }
+  ],
+  "summary": {
+    "accepted_documents": 2,
+    "rejected_documents": 3,
+    "total_documents": 5
+  }
+}

@@ -200,6 +200,11 @@ def main():
     except (OSError, ValueError, json.JSONDecodeError, KeyError, TypeError) as error:
         print(f"Error: {error}")
 
-
 if __name__ == "__main__":
-    main()
+    import sys
+
+    if "--output" in sys.argv:
+        from reporting import main as reporting_main
+        reporting_main()
+    else:
+        main()

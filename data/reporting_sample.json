@@ -1,0 +1,18 @@
+[
+  {
+    "id": "DOC-001", "filename": "annual_leave_policy.txt", "department": "HR",
+    "document_type": "txt", "size_kb": 24, "uploaded_at": "2026-10-05T09:30:00",
+    "file_path": "data/documents/annual_leave_policy.txt"
+  },
+  {
+    "id": "DOC-002", "filename": "expense_reimbursement.md", "department": "Finance",
+    "document_type": "md", "size_kb": 18, "uploaded_at": "2026-10-06T11:15:00",
+    "file_path": "data/documents/expense_reimbursement.md"
+  },
+  {
+    "id": "doc-001", "filename": "report.pdf", "department": "IT",
+    "document_type": "pdf", "size_kb": true, "uploaded_at": "not-a-date",
+    "file_path": "data/documents/../secret.pdf"
+  },
+  42
+]

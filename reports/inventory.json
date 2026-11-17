@@ -1,0 +1,13 @@
+{
+  "by_department": {
+    "Finance": 1,
+    "HR": 1
+  },
+  "by_type": {
+    "md": 1,
+    "txt": 1
+  },
+  "summary": {
+    "total_documents": 2
+  }
+}
