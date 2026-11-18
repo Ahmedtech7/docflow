@@ -1,0 +1,48 @@
+
+[
+  {
+    "id": "DOC-001",
+    "filename": "annual_leave_policy.txt",
+    "department": "HR",
+    "document_type": "txt",
+    "size_kb": 24,
+    "uploaded_at": "2026-10-05T09:30:00",
+    "file_path": "data/documents/annual_leave_policy.txt"
+  },
+  {
+    "id": "DOC-002",
+    "filename": "expense_reimbursement.md",
+    "department": "Finance",
+    "document_type": "md",
+    "size_kb": 18,
+    "uploaded_at": "2026-10-06T11:15:00",
+    "file_path": "data/documents/expense_reimbursement.md"
+  },
+  {
+    "id": "DOC-003",
+    "filename": "report.pdf",
+    "department": "IT",
+    "document_type": "pdf",
+    "size_kb": 6000,
+    "uploaded_at": "2026-10-07T10:00:00",
+    "file_path": "data/documents/report.pdf"
+  },
+  {
+    "id": "doc-001",
+    "filename": "another_policy.txt",
+    "department": "HR",
+    "document_type": "txt",
+    "size_kb": 30,
+    "uploaded_at": "2026-10-08T08:00:00",
+    "file_path": "data/documents/another_policy.txt"
+  },
+  {
+    "id": "DOC-005",
+    "filename": "wrong_extension.md",
+    "department": "Legal",
+    "document_type": "txt",
+    "size_kb": -5,
+    "uploaded_at": "not-a-date",
+    "file_path": "../private/document.md"
+  }
+]
