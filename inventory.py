@@ -64,11 +64,19 @@ def count_by(documents, key):
 
     # حلقة for تمر على كل مستند داخل قائمة documents
     # في كل دورة، المتغير document يمثل مستندًا واحدًا
-    for document in documents:
+    for index, document in enumerate(documents):
 
         # نقرأ قيمة الحقل المطلوب من المستند الحالي
         # مثال: إذا key = "department" فقد تكون value = "HR"
-        value = document[key]
+        # Task 2.1 (Bug C): سجل ناقص أو غير نصي كان يسبب KeyError/TypeError غامضًا
+        # السياسة: نتوقف بخطأ واضح يحدد رقم السجل بدل عرض إجماليات مضللة
+        value = document.get(key) if isinstance(document, dict) else None
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(
+                f"Record at index {index} has a missing or non-string "
+                f"'{key}'. Fix the record, or run with --validate to "
+                f"list all invalid records."
+            )
 
         # counts.get(value, 0) تبحث عن عدد هذه القيمة
         # إذا لم تكن موجودة، تبدأ من صفر
