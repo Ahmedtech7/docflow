@@ -1,55 +1,125 @@
-import json, subprocess, sys, tempfile, unittest
-from pathlib import Path
+"""Area 6: command-line behaviour, exit codes and file safety.
 
-ROOT = Path(__file__).resolve().parent.parent
-GOOD = {"id": "a", "filename": "a.txt", "department": "HR", "document_type": "txt",
-        "uploaded_at": "2026-01-10T10:30:00", "file_path": "data/documents/a.txt", "size_kb": 1}
+Regression tests for Task 2.1 are named test_regression_bug_* and map to docs/debugging-log.md.
 
+الهدف: نشغّل البرنامج كامل من التيرمنال ونتأكد من أكواد الخروج والرسائل.
+وش نسوي: 0 = نجاح، 1 = خطأ في البيانات أو الملف، 2 = أمر مكتوب غلط (argparse).
+وفي آخر الملف اختبارات regression لبلاغات تاسك 2.1:
+- Bug A: --output=path لازم يعطي نفس نتيجة --output path.
+- Bug B: ملف غير موجود لازم يطلع خطأ وكود خروج 1.
+- Bug C: سجل خربان يعطي رسالة واضحة بدون مجاميع ناقصة.
+"""
+import json
 
-def run(*args):
-    return subprocess.run([sys.executable, "inventory.py", *map(str, args)],
-                          cwd=ROOT, capture_output=True, text=True)
-
-
-class CliTests(unittest.TestCase):
-    def setUp(self):
-        self.tmp = Path(tempfile.mkdtemp())
-
-    def write(self, name, data):
-        path = self.tmp / name
-        path.write_text(json.dumps(data), encoding="utf-8")
-        return path
-
-    def test_a_output_space_and_equals_match(self):
-        src = self.write("in.json", [GOOD])
-        r1 = run(src, "--output", self.tmp / "1.json")
-        r2 = run(src, f"--output={self.tmp / '2.json'}")
-        self.assertEqual((r1.returncode, r2.returncode), (0, 0))
-        self.assertEqual((self.tmp / "1.json").read_text(), (self.tmp / "2.json").read_text())
-
-    def test_b_missing_file_exits_nonzero(self):
-        r = run(self.tmp / "nope.json")
-        self.assertEqual(r.returncode, 1)
-        self.assertIn("Error:", r.stderr)
-
-    def test_c_malformed_record_fails_cleanly(self):
-        for bad in ({**GOOD, "department": None}, {**GOOD, "document_type": 5},
-                    {k: v for k, v in GOOD.items() if k != "department"}, "not-an-object"):
-            r = run(self.write("bad.json", [GOOD, bad]))
-            self.assertEqual(r.returncode, 1, bad)
-            self.assertIn("index 1", r.stderr)
-            self.assertEqual(r.stdout, "")  # no misleading partial totals
-
-    def test_c_validate_still_reports_malformed(self):
-        r = run(self.write("bad.json", [GOOD, {**GOOD, "department": None}]), "--validate")
-        self.assertEqual(r.returncode, 0)
-        self.assertIn("Rejected: 1", r.stdout)
-
-    def test_normal_workflows(self):
-        src = self.write("ok.json", [GOOD])
-        self.assertEqual(run(src).returncode, 0)
-        self.assertEqual(run(src, "--validate").returncode, 0)
+import pytest
 
 
-if __name__ == "__main__":
-    unittest.main()
+# --- successful runs exit 0 ---
+
+def test_summary_success(run_cli, write_json, make_doc):
+    result = run_cli(write_json([make_doc()]))
+    assert result.returncode == 0
+    assert result.stdout.startswith("DocFlow - Document Inventory\nTotal documents: 1")
+    assert result.stderr == ""
+
+
+def test_validate_success_lists_rejections(run_cli, write_json, make_doc):
+    result = run_cli(write_json([make_doc(), make_doc(id="doc-001")]), "--validate")
+    assert result.returncode == 0
+    assert "Accepted: 1\nRejected: 1" in result.stdout
+    assert "- Duplicate document ID" in result.stdout
+
+
+def test_validate_output_writes_validation_report(run_cli, write_json, make_doc, tmp_path):
+    out = tmp_path / "validation.json"
+    result = run_cli(write_json([make_doc(), make_doc(size_kb=0)]), "--validate", "--output", out)
+    assert result.returncode == 0
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert report["rejected"][0]["index"] == 1
+
+
+def test_shipped_samples_still_work(run_cli, tmp_path):
+    assert run_cli("data/sample_metadata.json").returncode == 0
+    assert run_cli("data/validation_sample.json", "--validate").returncode == 0
+    assert run_cli("data/sample_metadata.json", "--output", tmp_path / "r.json").returncode == 0
+
+
+# --- failing runs exit nonzero with a clear message ---
+
+def test_malformed_json_fails(run_cli, tmp_path):
+    path = tmp_path / "broken.json"
+    path.write_text("{ invalid", encoding="utf-8")
+    result = run_cli(path)
+    assert result.returncode == 1
+    assert result.stderr.startswith("Error:")
+
+
+def test_non_array_json_fails(run_cli, write_json):
+    result = run_cli(write_json({"documents": []}))
+    assert result.returncode == 1
+    assert "JSON must contain an array" in result.stderr
+
+
+@pytest.mark.parametrize("args", [[], ["a.json", "--unknown"], ["a.json", "--output"]])
+def test_bad_arguments_show_usage(run_cli, args):
+    result = run_cli(*args)
+    assert result.returncode == 2          # argparse usage error
+    assert "usage:" in result.stderr
+
+
+def test_output_cannot_overwrite_input(run_cli, write_json, make_doc):
+    source = write_json([make_doc()])
+    before = source.read_text(encoding="utf-8")
+    result = run_cli(source, "--output", source)
+    assert result.returncode == 1
+    assert "Cannot overwrite the input JSON file" in result.stderr
+    assert source.read_text(encoding="utf-8") == before
+
+
+def test_output_cannot_be_a_directory(run_cli, write_json, make_doc, tmp_path):
+    result = run_cli(write_json([make_doc()]), "--output", tmp_path)
+    assert result.returncode == 1
+    assert "Output path must be a file" in result.stderr
+
+
+# --- REGRESSION: Task 2.1 bug reports ---
+
+def test_regression_bug_a_output_equals_form_matches_space_form(run_cli, write_json, make_doc, tmp_path):
+    """Bug A: --output=path.json must behave exactly like --output path.json."""
+    source = write_json([make_doc(), make_doc(id="DOC-002", size_kb=0)])
+    spaced, equals = tmp_path / "spaced.json", tmp_path / "equals.json"
+    r1 = run_cli(source, "--output", spaced)
+    r2 = run_cli(source, f"--output={equals}")
+    assert (r1.returncode, r2.returncode) == (0, 0)
+    assert spaced.read_bytes() == equals.read_bytes()
+
+
+def test_regression_bug_b_missing_file_exits_nonzero(run_cli, tmp_path):
+    """Bug B: a missing input must print an error and exit nonzero."""
+    result = run_cli(tmp_path / "does_not_exist.json")
+    assert result.returncode == 1
+    assert "No such file or directory" in result.stderr
+    assert result.stdout == ""
+
+
+@pytest.mark.parametrize("field, value", [
+    ("department", None),
+    ("document_type", 5),
+    ("department", ""),
+])
+def test_regression_bug_c_malformed_record_fails_cleanly(run_cli, write_json, make_doc, field, value):
+    """Bug C: one malformed record gives an actionable error and no partial totals."""
+    result = run_cli(write_json([make_doc(), make_doc(**{field: value})]))
+    assert result.returncode == 1
+    assert f"Record at index 1 has a missing or non-string '{field}'" in result.stderr
+    assert result.stdout == ""
+
+
+def test_regression_bug_c_missing_key_and_non_object(run_cli, write_json, make_doc):
+    """Bug C: a missing key or a non-object record is reported the same way."""
+    doc = make_doc()
+    del doc["department"]
+    for bad in (doc, "not-an-object"):
+        result = run_cli(write_json([make_doc(), bad]))
+        assert result.returncode == 1
+        assert "Record at index 1" in result.stderr

@@ -154,3 +154,39 @@ and rejection reasons.
 The reporting utility prevents overwriting the input JSON
 file and returns a nonzero exit code when an error occurs.
 
+
+
+## Task 2.2 — Automated Tests
+
+The test suite uses [pytest](https://docs.pytest.org/) and synthetic data only.
+
+### Setup
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+### Run
+
+From the repository root:
+
+```bash
+python -m pytest
+```
+
+Add `-v` to see each test name. Configuration lives in `pytest.ini`.
+
+### What is covered
+
+| File | Area |
+|---|---|
+| `tests/test_loading.py` | Valid, empty, missing, malformed and non-array JSON |
+| `tests/test_summary.py` | Totals and counts by type and department; malformed records |
+| `tests/test_validation.py` | Every metadata rule, including size and path boundaries |
+| `tests/test_duplicates.py` | Case-insensitive duplicate IDs and accepted/rejected totals |
+| `tests/test_reports.py` | Report structure, counts, rejection details, deterministic output, safe saving |
+| `tests/test_cli.py` | Exit codes, `--output` forms, overwrite protection, error messages |
+
+Tests named `test_regression_bug_a/b/c_*` protect the Task 2.1 fixes described in `docs/debugging-log.md`.
+
+Every test writes to its own temporary folder, so the suite does not change files in `data/` or `reports/`, and it can run repeatedly in any order.
