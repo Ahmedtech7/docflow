@@ -162,8 +162,10 @@ The test suite uses [pytest](https://docs.pytest.org/) and synthetic data only.
 
 ### Setup
 
+Dependencies are managed with [uv](https://docs.astral.sh/uv/). pytest is in the `dev` dependency group in `pyproject.toml`, and exact versions are locked in `uv.lock`.
+
 ```bash
-python -m pip install -r requirements-dev.txt
+uv sync
 ```
 
 ### Run
@@ -171,7 +173,7 @@ python -m pip install -r requirements-dev.txt
 From the repository root:
 
 ```bash
-python -m pytest
+uv run pytest
 ```
 
 Add `-v` to see each test name. Configuration lives in `pytest.ini`.
@@ -255,12 +257,21 @@ The test command mounts nothing. It tests the code copied into the image, and ev
 
 - Base image: `python:3.14-slim`, the same Python version used locally.
 - Working directory: `/app`, so relative paths such as `data/` and `tests/` work exactly as they do locally.
+- Dependencies are installed with uv from `pyproject.toml` and `uv.lock` into `/app/.venv`, which is on `PATH`.
 - Runs as a non-root user.
 - `.dockerignore` keeps git data, caches, virtual environments, generated reports and secret files out of the image.
 
 ### Dependency versions
 
-The application uses only the Python standard library. The one development dependency is pinned to an exact version in `requirements-dev.txt` (`pytest==9.0.3`), so every build installs the same version. To upgrade, change the version there and rebuild the image.
+Dependencies are managed with uv:
+
+- The application uses only the Python standard library, so `dependencies` in `pyproject.toml` is empty.
+- pytest is in the `dev` dependency group: `pytest==9.0.3`.
+- `uv.lock` pins the exact version of every package, including pytest's own dependencies.
+- The image installs them with `uv sync --frozen`, which fails the build if `uv.lock` does not match `pyproject.toml`, so every build gets the same versions.
+- The uv binary itself is pinned to `0.13.8` in the `Dockerfile`.
+
+To upgrade pytest, change the version in `pyproject.toml`, run `uv lock`, and rebuild the image.
 
 ### Exit codes
 

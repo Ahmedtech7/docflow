@@ -1,0 +1,10 @@
+[project]
+name = "docflow"
+version = "0.1.0"
+description = "DocFlow document inventory and validation CLI"
+requires-python = ">=3.14"
+# The app uses only the Python standard library.
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest==9.0.3"]

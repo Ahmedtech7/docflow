@@ -1,16 +1,26 @@
 # DocFlow image: runs the existing CLI (inventory.py) and the pytest suite.
 FROM python:3.14-slim
 
-# No .pyc files in the image, and logs appear immediately.
+# uv installs dependencies from pyproject.toml and uv.lock (pinned uv version).
+COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /bin/uv
+
+# No .pyc files in the image, logs appear immediately, and uv uses the image's Python
+# instead of downloading one and does not keep a download cache.
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_NO_CACHE=1
 
 # All commands run from /app, so relative paths like data/ and tests/ work as they do locally.
 WORKDIR /app
 
-# Install pinned dependencies first, so this layer is cached until requirements change.
-COPY requirements-dev.txt .
-RUN pip install --no-cache-dir -r requirements-dev.txt
+# Install the locked dev dependency group first, so this layer is cached until the lock file changes.
+# --frozen fails the build if uv.lock is out of date instead of silently changing versions.
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --group dev --no-install-project
+
+# Use the project's virtual environment for python and pytest.
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Copy the project (filtered by .dockerignore).
 COPY . .
