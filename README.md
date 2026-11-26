@@ -302,3 +302,80 @@ Check it with `echo $?` after any command.
   ```bash
   export PATH="$PATH:/Applications/Docker.app/Contents/Resources/bin"
   ```
+
+## Task 2.4 — Code Quality Checks and CI
+
+[Ruff](https://docs.astral.sh/ruff/) checks formatting and lint rules. The same checks run locally, before each commit (pre-commit), and on every pull request (GitHub Actions).
+
+| Check | What it finds | Example |
+|---|---|---|
+| Formatting | Code layout | Spacing, line breaks, quotes |
+| Linting | Likely mistakes and unused code | An unused import |
+| Testing | Wrong behaviour | A failing pytest assertion |
+
+### Setup
+
+You need [uv](https://docs.astral.sh/uv/) for the Ruff commands and Docker for the test commands.
+
+```bash
+uv sync                       # installs Ruff, pytest and pre-commit (dev group)
+uv run pre-commit install     # runs the checks before every git commit
+```
+
+Tool versions are pinned in `pyproject.toml` (`ruff==0.17.6`, `pre-commit==4.7.0`, `pytest==9.0.3`) and locked in `uv.lock`. Ruff settings are in `[tool.ruff]` in `pyproject.toml`.
+
+### Commands
+
+```bash
+make format         # formats the Python files and sorts imports (changes files)
+make lint           # checks lint rules (never changes files)
+make format-check   # checks formatting (never changes files; fails if a file needs formatting)
+make test           # rebuilds the image if needed and runs pytest in Docker
+make check          # lint + format-check + test
+```
+
+Typical workflow before opening a pull request:
+
+```bash
+make format
+make lint
+make test
+```
+
+The Task 2.3 commands still work: `make build`, `make inventory`, `make validate` and `make report`.
+
+### Pre-commit hooks
+
+`.pre-commit-config.yaml` runs `ruff format` and `ruff check` on the staged Python files when you run `git commit`. If a hook fails, the commit stops. If `ruff format` changed a file, stage it again and commit.
+
+Run the hooks by hand on every file:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+The hooks use the Ruff version from `uv.lock` and need no network services or credentials.
+
+### Continuous integration
+
+`.github/workflows/checks.yml` runs on every pull request when it is opened or updated. Its steps are:
+
+1. Install uv `0.13.8` and the locked dev tools (`uv sync --locked`).
+2. `make lint`.
+3. `make format-check`.
+4. `make test` (pytest in Docker).
+
+CI never edits files: it uses only the checking commands. Pre-commit hooks can be skipped or not installed, so CI is the check every pull request must pass.
+
+### Troubleshooting a failed check
+
+On the pull request, open **Checks**, then the failed step. The step name tells you which check failed.
+
+| Failed step | What to do |
+|---|---|
+| Lint | Read the rule code and line, for example `F401 'os' imported but unused --> inventory.py:9`. Fix it, then run `make lint`. |
+| Format check | The log shows a diff of the expected layout. Run `make format`, then commit the changes. |
+| Tests | Find the `FAILED tests/...` line and the `E` lines above it. Reproduce with `make test`, or faster with `uv run pytest tests/<file>.py -v`. |
+| `uv sync --locked` | `uv.lock` does not match `pyproject.toml`. Run `uv lock` and commit `uv.lock`. |
+
+Run `make check` before pushing to catch all three locally.

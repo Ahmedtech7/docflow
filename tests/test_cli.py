@@ -9,12 +9,13 @@ Regression tests for Task 2.1 are named test_regression_bug_* and map to docs/de
 - Bug B: ملف غير موجود لازم يطلع خطأ وكود خروج 1.
 - Bug C: سجل خربان يعطي رسالة واضحة بدون مجاميع ناقصة.
 """
+
 import json
 
 import pytest
 
-
 # --- successful runs exit 0 ---
+
 
 def test_summary_success(run_cli, write_json, make_doc):
     result = run_cli(write_json([make_doc()]))
@@ -46,6 +47,7 @@ def test_shipped_samples_still_work(run_cli, tmp_path):
 
 # --- failing runs exit nonzero with a clear message ---
 
+
 def test_malformed_json_fails(run_cli, tmp_path):
     path = tmp_path / "broken.json"
     path.write_text("{ invalid", encoding="utf-8")
@@ -63,7 +65,7 @@ def test_non_array_json_fails(run_cli, write_json):
 @pytest.mark.parametrize("args", [[], ["a.json", "--unknown"], ["a.json", "--output"]])
 def test_bad_arguments_show_usage(run_cli, args):
     result = run_cli(*args)
-    assert result.returncode == 2          # argparse usage error
+    assert result.returncode == 2  # argparse usage error
     assert "usage:" in result.stderr
 
 
@@ -84,7 +86,10 @@ def test_output_cannot_be_a_directory(run_cli, write_json, make_doc, tmp_path):
 
 # --- REGRESSION: Task 2.1 bug reports ---
 
-def test_regression_bug_a_output_equals_form_matches_space_form(run_cli, write_json, make_doc, tmp_path):
+
+def test_regression_bug_a_output_equals_form_matches_space_form(
+    run_cli, write_json, make_doc, tmp_path
+):
     """Bug A: --output=path.json must behave exactly like --output path.json."""
     source = write_json([make_doc(), make_doc(id="DOC-002", size_kb=0)])
     spaced, equals = tmp_path / "spaced.json", tmp_path / "equals.json"
@@ -102,12 +107,17 @@ def test_regression_bug_b_missing_file_exits_nonzero(run_cli, tmp_path):
     assert result.stdout == ""
 
 
-@pytest.mark.parametrize("field, value", [
-    ("department", None),
-    ("document_type", 5),
-    ("department", ""),
-])
-def test_regression_bug_c_malformed_record_fails_cleanly(run_cli, write_json, make_doc, field, value):
+@pytest.mark.parametrize(
+    "field, value",
+    [
+        ("department", None),
+        ("document_type", 5),
+        ("department", ""),
+    ],
+)
+def test_regression_bug_c_malformed_record_fails_cleanly(
+    run_cli, write_json, make_doc, field, value
+):
     """Bug C: one malformed record gives an actionable error and no partial totals."""
     result = run_cli(write_json([make_doc(), make_doc(**{field: value})]))
     assert result.returncode == 1
