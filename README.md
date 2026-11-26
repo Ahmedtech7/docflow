@@ -162,8 +162,10 @@ The test suite uses [pytest](https://docs.pytest.org/) and synthetic data only.
 
 ### Setup
 
+Dependencies are managed with [uv](https://docs.astral.sh/uv/). pytest is in the `dev` dependency group in `pyproject.toml`, and exact versions are locked in `uv.lock`.
+
 ```bash
-python -m pip install -r requirements-dev.txt
+uv sync
 ```
 
 ### Run
@@ -171,7 +173,7 @@ python -m pip install -r requirements-dev.txt
 From the repository root:
 
 ```bash
-python -m pytest
+uv run pytest
 ```
 
 Add `-v` to see each test name. Configuration lives in `pytest.ini`.
@@ -190,3 +192,113 @@ Add `-v` to see each test name. Configuration lives in `pytest.ini`.
 Tests named `test_regression_bug_a/b/c_*` protect the Task 2.1 fixes described in `docs/debugging-log.md`.
 
 Every test writes to its own temporary folder, so the suite does not change files in `data/` or `reports/`, and it can run repeatedly in any order.
+
+## Task 2.3 — Docker
+
+Run DocFlow and its tests without installing Python or pytest on your machine. You only need **Docker**.
+
+### Build the image
+
+```bash
+docker build -t docflow .
+```
+
+### Run the tests
+
+```bash
+docker run --rm docflow python -m pytest
+```
+
+All 140 tests run inside the container, including the Task 2.1 regression tests.
+
+### Run the CLI
+
+Inventory summary of the sample data (the image's default command):
+
+```bash
+docker run --rm docflow
+```
+
+Inventory or validation of a file from your machine:
+
+```bash
+docker run --rm -v "$PWD/data:/app/data:ro" docflow python inventory.py data/sample_metadata.json
+docker run --rm -v "$PWD/data:/app/data:ro" docflow python inventory.py data/validation_sample.json --validate
+```
+
+### Example: validate an inventory and export a report to the host
+
+```bash
+mkdir -p reports
+docker run --rm \
+  --user "$(id -u):$(id -g)" \
+  -v "$PWD/data:/app/data:ro" \
+  -v "$PWD/reports:/app/reports" \
+  docflow python inventory.py data/validation_sample.json --validate --output reports/validation_report.json
+cat reports/validation_report.json
+```
+
+The CLI prints `Report saved to: /app/reports/validation_report.json`. That is the path inside the container, and it is the same file as `reports/validation_report.json` on your machine.
+
+To use your own inventory, put the file in `data/` and pass its path.
+
+### Docker Compose
+
+`compose.yaml` saves the run settings (mounts and commands), so you do not need to type them each time:
+
+```bash
+docker compose build                  # build the image
+docker compose run --rm test          # run the tests
+docker compose run --rm inventory     # inventory summary of the sample data
+mkdir -p reports
+docker compose run --rm inventory python inventory.py data/validation_sample.json --validate --output reports/validation_report.json
+```
+
+### How files move between the host and the container
+
+| Host folder | Container folder | Mode | Why |
+|---|---|---|---|
+| `data/` | `/app/data` | read-only (`:ro`) | the container reads your input files; it cannot change them |
+| `reports/` | `/app/reports` | read-write | reports are written to your machine |
+
+`--rm` deletes each container when it exits. Reports survive because they are written to the mounted host folder, not inside the container. `--user` writes report files as your host user instead of root.
+
+The test command mounts nothing. It tests the code copied into the image, and every test writes only to its own temporary folder.
+
+### Image details
+
+- Base image: `python:3.14-slim`, the same Python version used locally.
+- Working directory: `/app`, so relative paths such as `data/` and `tests/` work exactly as they do locally.
+- Dependencies are installed with uv from `pyproject.toml` and `uv.lock` into `/app/.venv`, which is on `PATH`.
+- Runs as a non-root user.
+- `.dockerignore` keeps git data, caches, virtual environments, generated reports and secret files out of the image.
+
+### Dependency versions
+
+Dependencies are managed with uv:
+
+- The application uses only the Python standard library, so `dependencies` in `pyproject.toml` is empty.
+- pytest is in the `dev` dependency group: `pytest==9.0.3`.
+- `uv.lock` pins the exact version of every package, including pytest's own dependencies.
+- The image installs them with `uv sync --locked`, which fails the build if `uv.lock` does not match `pyproject.toml`, so every build gets the same versions.
+- The uv binary itself is pinned to `0.13.8` in the `Dockerfile`.
+
+To upgrade pytest, change the version in `pyproject.toml`, run `uv lock`, and rebuild the image.
+
+### Exit codes
+
+`docker run` returns the exit code of the command inside the container:
+
+- A missing or invalid input file prints `Error: ...` and exits with 1.
+- A failing test makes `pytest` exit with 1.
+
+Check it with `echo $?` after any command.
+
+### Troubleshooting
+
+- `Cannot connect to the Docker daemon`: start Docker Desktop and retry.
+- `docker-credential-desktop: executable file not found` (macOS): add Docker's tools to your PATH:
+
+  ```bash
+  export PATH="$PATH:/Applications/Docker.app/Contents/Resources/bin"
+  ```

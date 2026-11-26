@@ -1,2 +1,14 @@
 .DS_Store
 __pycache__/
+
+# Local environments, caches and secrets
+.venv/
+venv/
+.pytest_cache/
+.env
+.vscode/
+
+# Generated reports
+reports/*
+!reports/inventory.json
+!reports/validation.json
