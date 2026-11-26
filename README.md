@@ -242,6 +242,18 @@ The CLI prints `Report saved to: /app/reports/validation_report.json`. That is t
 
 To use your own inventory, put the file in `data/` and pass its path.
 
+### Docker Compose
+
+`compose.yaml` saves the run settings (mounts and commands), so you do not need to type them each time:
+
+```bash
+docker compose build                  # build the image
+docker compose run --rm test          # run the tests
+docker compose run --rm inventory     # inventory summary of the sample data
+mkdir -p reports
+docker compose run --rm inventory python inventory.py data/validation_sample.json --validate --output reports/validation_report.json
+```
+
 ### How files move between the host and the container
 
 | Host folder | Container folder | Mode | Why |
@@ -268,7 +280,7 @@ Dependencies are managed with uv:
 - The application uses only the Python standard library, so `dependencies` in `pyproject.toml` is empty.
 - pytest is in the `dev` dependency group: `pytest==9.0.3`.
 - `uv.lock` pins the exact version of every package, including pytest's own dependencies.
-- The image installs them with `uv sync --frozen`, which fails the build if `uv.lock` does not match `pyproject.toml`, so every build gets the same versions.
+- The image installs them with `uv sync --locked`, which fails the build if `uv.lock` does not match `pyproject.toml`, so every build gets the same versions.
 - The uv binary itself is pinned to `0.13.8` in the `Dockerfile`.
 
 To upgrade pytest, change the version in `pyproject.toml`, run `uv lock`, and rebuild the image.

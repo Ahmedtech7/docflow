@@ -15,9 +15,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install the locked dev dependency group first, so this layer is cached until the lock file changes.
-# --frozen fails the build if uv.lock is out of date instead of silently changing versions.
+# --locked fails the build if uv.lock is out of date instead of silently changing versions.
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --group dev --no-install-project
+RUN uv sync --locked --group dev --no-install-project
 
 # Use the project's virtual environment for python and pytest.
 ENV PATH="/app/.venv/bin:$PATH"

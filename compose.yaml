@@ -1,0 +1,16 @@
+# How to run the DocFlow image. The Dockerfile says how to build it.
+services:
+  # The CLI: docker compose run --rm inventory
+  inventory:
+    build: .
+    image: docflow
+    volumes:
+      - ./data:/app/data:ro
+      - ./reports:/app/reports
+
+  # The test suite: docker compose run --rm test
+  # No volumes: it tests the code copied into the image.
+  test:
+    build: .
+    image: docflow
+    command: ["python", "-m", "pytest"]

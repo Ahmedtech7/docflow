@@ -24,5 +24,6 @@ reports
 
 # Not needed to run the app or tests
 Dockerfile
+compose.yaml
 .dockerignore
 README 2.md
