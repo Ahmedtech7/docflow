@@ -25,5 +25,8 @@ reports
 # Not needed to run the app or tests
 Dockerfile
 compose.yaml
+Makefile
+.pre-commit-config.yaml
+.github
 .dockerignore
 README 2.md

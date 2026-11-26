@@ -4,6 +4,7 @@
 وش نسوي: نختبر count_by على بيانات سليمة وعلى قائمة فاضية، ونتأكد من شكل
 المخرجات حرفياً. ولو فيه سجل خربان، لازم يذكر رقمه واسم الحقل وما يطبع مجاميع ناقصة.
 """
+
 import pytest
 
 from inventory import count_by, show_inventory
@@ -39,12 +40,15 @@ def test_show_inventory_empty(capsys):
 
 
 # Documented policy (Task 2.1, bug C): the plain summary fails cleanly.
-@pytest.mark.parametrize("bad", [
-    {"department": None},
-    {"department": ""},
-    {"department": "   "},
-    {"document_type": 5},
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"department": None},
+        {"department": ""},
+        {"department": "   "},
+        {"document_type": 5},
+    ],
+)
 def test_malformed_field_names_record_and_field(make_doc, bad):
     with pytest.raises(ValueError, match=r"index 1 .*'(department|document_type)'"):
         show_inventory([make_doc(), make_doc(**bad)])

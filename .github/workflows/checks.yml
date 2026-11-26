@@ -1,0 +1,32 @@
+# Runs on every pull request (opened or updated). Each step is a separate check,
+# so the failing step's name shows which check failed. Nothing here edits files.
+name: Checks
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.13.8"
+
+      - name: Install dev tools (Ruff, pytest)
+        run: uv sync --locked
+
+      - name: Lint
+        run: make lint
+
+      - name: Format check
+        run: make format-check
+
+      - name: Tests (pytest in Docker)
+        run: make test

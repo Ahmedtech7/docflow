@@ -4,6 +4,7 @@
 # وش نسوي: DOC-001 و doc-001 و " Doc-001 " تعتبر نفس الـ ID. أول مستند سليم يفوز،
 # والمستند المرفوض ما يحجز الـ ID. ومجموع المقبول + المرفوض = عدد السجلات.
 """
+
 from inventory import validate_inventory
 
 
@@ -39,7 +40,13 @@ def test_duplicate_reason_is_added_to_other_errors(make_doc):
 
 
 def test_totals_add_up(make_doc):
-    docs = [make_doc(id="A"), make_doc(id="a"), make_doc(id="B", document_type="pdf"), make_doc(id="C"), "bad"]
+    docs = [
+        make_doc(id="A"),
+        make_doc(id="a"),
+        make_doc(id="B", document_type="pdf"),
+        make_doc(id="C"),
+        "bad",
+    ]
     accepted, rejected = validate_inventory(docs)
     assert (len(accepted), len(rejected)) == (2, 3)
     assert len(accepted) + len(rejected) == len(docs)

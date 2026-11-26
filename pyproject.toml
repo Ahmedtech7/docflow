@@ -7,4 +7,17 @@ requires-python = ">=3.14"
 dependencies = []
 
 [dependency-groups]
-dev = ["pytest==9.0.3"]
+dev = [
+    "pre-commit==4.7.0",
+    "pytest==9.0.3",
+    "ruff==0.17.6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+# E/W: pycodestyle style errors, F: Pyflakes (unused imports, undefined names),
+# I: import sorting, B: likely bugs (flake8-bugbear).
+select = ["E", "W", "F", "I", "B"]

@@ -5,6 +5,7 @@
 (أكبر من 0 وأقل أو يساوي 5120)، صيغة التاريخ، والمسارات الخطيرة مثل ../
 parametrize يكرر الاختبار الواحد على قيم كثيرة، عشان كذا عدد الاختبارات كبير.
 """
+
 import pytest
 
 from inventory import validate_document
@@ -50,9 +51,12 @@ def test_all_errors_are_reported_together(make_doc):
 
 # --- formats and filenames ---
 
+
 @pytest.mark.parametrize("doc_type", ["pdf", "docx", "TXT", "Md"])
 def test_unsupported_document_type(make_doc, doc_type):
-    assert f"Unsupported document type: {doc_type}" in validate_document(make_doc(document_type=doc_type))
+    assert f"Unsupported document type: {doc_type}" in validate_document(
+        make_doc(document_type=doc_type)
+    )
 
 
 @pytest.mark.parametrize("filename", ["policy.pdf", "policy", "policy.TXT", "policy.txt.bak"])
@@ -73,6 +77,7 @@ def test_filename_with_path_separator(make_doc, filename):
 
 # --- size boundaries: 0 < size_kb <= 5120 ---
 
+
 @pytest.mark.parametrize("size", [0.1, 1, 5120, 5120.0])
 def test_size_inside_bounds_is_accepted(make_doc, size):
     assert validate_document(make_doc(size_kb=size)) == []
@@ -90,32 +95,42 @@ def test_size_must_be_a_number(make_doc, size):
 
 # --- timestamps ---
 
-@pytest.mark.parametrize("stamp", ["2026-10-05T09:30:00", "2026-10-05T09:30:00+03:00", "2026-10-05T09:30"])
+
+@pytest.mark.parametrize(
+    "stamp", ["2026-10-05T09:30:00", "2026-10-05T09:30:00+03:00", "2026-10-05T09:30"]
+)
 def test_valid_timestamp_is_accepted(make_doc, stamp):
     assert validate_document(make_doc(uploaded_at=stamp)) == []
 
 
-@pytest.mark.parametrize("stamp", ["2026-10-05", "not-a-date", "2026-13-05T09:30:00", "2026-10-05T25:00:00", "05/10/2026T09:30"])
+@pytest.mark.parametrize(
+    "stamp",
+    ["2026-10-05", "not-a-date", "2026-13-05T09:30:00", "2026-10-05T25:00:00", "05/10/2026T09:30"],
+)
 def test_invalid_timestamp_is_rejected(make_doc, stamp):
     assert "Invalid ISO 8601 date-time" in validate_document(make_doc(uploaded_at=stamp))
 
 
 # --- file paths ---
 
+
 @pytest.mark.parametrize("path", ["data/documents/policy.txt", "data/documents/hr/policy.txt"])
 def test_safe_path_is_accepted(make_doc, path):
     assert validate_document(make_doc(file_path=path)) == []
 
 
-@pytest.mark.parametrize("path", [
-    "../private/policy.txt",                 # parent directory escape
-    "data/documents/../../etc/passwd",       # traversal inside the prefix
-    "/data/documents/policy.txt",            # absolute path
-    "C:/data/documents/policy.txt",          # drive letter
-    "data\\documents\\policy.txt",           # backslashes
-    "data/other/policy.txt",                 # outside data/documents
-    "data/documents",                        # no file name
-    "data/documents/",                       # empty file name
-])
+@pytest.mark.parametrize(
+    "path",
+    [
+        "../private/policy.txt",  # parent directory escape
+        "data/documents/../../etc/passwd",  # traversal inside the prefix
+        "/data/documents/policy.txt",  # absolute path
+        "C:/data/documents/policy.txt",  # drive letter
+        "data\\documents\\policy.txt",  # backslashes
+        "data/other/policy.txt",  # outside data/documents
+        "data/documents",  # no file name
+        "data/documents/",  # empty file name
+    ],
+)
 def test_unsafe_or_invalid_path_is_rejected(make_doc, path):
     assert "Invalid file path" in validate_document(make_doc(file_path=path))
